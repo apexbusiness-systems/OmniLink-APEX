@@ -36,7 +36,7 @@ const Index = () => {
     { name: 'WhatsApp Hub', icon: icon2, alt: 'WhatsApp Hub app icon' },
     { name: 'Gmail Bridge', icon: icon3, alt: 'Gmail Bridge app icon' },
     { name: 'IONOS Mail', icon: icon4, alt: 'IONOS Mail app icon' },
-    { name: 'Google Dev Console', icon: icon5, alt: 'Google Dev Console app icon' },
+    { name: 'RBP', icon: icon5, alt: 'RBP app icon' },
     { name: 'Apple Dev Connect', icon: icon6, alt: 'Apple Dev Connect app icon' },
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
     { name: 'RobuxMinerPro', icon: icon7, alt: 'RobuxMinerPro icon' },
