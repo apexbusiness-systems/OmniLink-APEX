@@ -32,7 +32,7 @@ const Index = () => {
   };
 
   const apps = [
-    { name: 'App 10', icon: icon9, alt: 'App 10 icon' },
+    { name: 'TradeLine 24/7', icon: tradeline247, alt: 'TradeLine 24/7 app icon' },
     { name: 'WhatsApp Hub', icon: icon2, alt: 'WhatsApp Hub app icon' },
     { name: 'Gmail Bridge', icon: icon3, alt: 'Gmail Bridge app icon' },
     { name: 'IONOS Mail', icon: icon4, alt: 'IONOS Mail app icon' },
@@ -41,7 +41,6 @@ const Index = () => {
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
     { name: 'App 8', icon: icon7, alt: 'App 8 icon' },
     { name: 'App 9', icon: icon8, alt: 'App 9 icon' },
-    { name: 'TradeLine 24/7', icon: tradeline247, alt: 'TradeLine 24/7 app icon' },
   ];
 
   return (
