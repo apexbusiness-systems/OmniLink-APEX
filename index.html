@@ -1,24 +1,50 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- @omnilink/web-head:v1 -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>lovable-omni-sync</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-
-    <meta property="og:title" content="lovable-omni-sync" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OmniLink - Unified Link & File Management Platform</title>
+    <meta name="description" content="OmniLink — Centralize your links, files, integrations, and automations in one powerful dashboard. Secure, fast, and intuitive." />
+    <meta name="author" content="OmniLink" />
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="OmniLink — Unified Link & File Management" />
+    <meta property="og:description" content="Centralize your links, files, integrations, and automations in one powerful dashboard." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    <meta property="og:url" content="https://omnilink.app/" />
+    <meta property="og:image" content="/og.png" />
+    
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="OmniLink — Unified Link & File Management" />
+    <meta name="twitter:description" content="Centralize your links, files, integrations, and automations." />
+    <meta name="twitter:image" content="/og.png" />
+    
+    <!-- Security -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ Service Worker registered'))
+            .catch(err => console.log('❌ Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

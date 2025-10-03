@@ -103,3 +103,56 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* @omnilink/a11y-core:v1 - WCAG 2.2 Level AA Compliance */
+@layer base {
+  /* Visible focus indicators for keyboard navigation */
+  *:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  /* Minimum touch target size (44x44px minimum per WCAG) */
+  button,
+  a[role="button"],
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    * {
+      border-width: 2px;
+    }
+  }
+  
+  /* Skip to main content link for screen readers */
+  .skip-to-main {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+    padding: 1em;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    text-decoration: none;
+  }
+  
+  .skip-to-main:focus {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 1em;
+  }
+}

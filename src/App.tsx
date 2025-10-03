@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DashboardLayout } from "./components/DashboardLayout";
+import { ConsentBanner } from "./components/ConsentBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -12,6 +13,7 @@ import Links from "./pages/Links";
 import Files from "./pages/Files";
 import Automations from "./pages/Automations";
 import Integrations from "./pages/Integrations";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,11 +23,13 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ConsentBanner />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
             <Route path="/links" element={<DashboardLayout><Links /></DashboardLayout>} />
             <Route path="/files" element={<DashboardLayout><Files /></DashboardLayout>} />
