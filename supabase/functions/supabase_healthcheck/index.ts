@@ -22,23 +22,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Test 1: Read operation - get current timestamp
-    const { data: timeData, error: timeError } = await supabase
-      .rpc('now');
-
-    if (timeError) {
-      console.error('❌ Read test failed:', timeError);
-      return new Response(
-        JSON.stringify({ 
-          status: 'error', 
-          test: 'read',
-          error: timeError.message 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Test 2: Write operation - insert health check record
+    // Auth check
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData?.user?.id;
 
@@ -52,6 +36,27 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Test 1: Read operation - simple select guarded by RLS
+    const { error: readError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (readError) {
+      console.error('❌ Read test failed:', readError);
+      return new Response(
+        JSON.stringify({ 
+          status: 'error', 
+          test: 'read',
+          error: readError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Test 2: Write operation - insert health check record
 
     const { data: writeData, error: writeError } = await supabase
       .from('health_checks')

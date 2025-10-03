@@ -28,11 +28,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if Supabase is properly configured
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Check if Lovable Cloud backend is configured with fallbacks
+    const supabaseUrl =
+      import.meta.env.VITE_SUPABASE_URL ??
+      (import.meta as any).env?.NEXT_PUBLIC_SUPABASE_URL ??
+      (import.meta as any).env?.PUBLIC_SUPABASE_URL;
+
+    const supabaseAnonKey =
+      import.meta.env.VITE_SUPABASE_ANON_KEY ??
+      (import.meta as any).env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+      (import.meta as any).env?.PUBLIC_SUPABASE_ANON_KEY ??
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY; // Lovable Cloud publishable key
     
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn(
+        'Missing Supabase environment variables. Checked: VITE_SUPABASE_URL | NEXT_PUBLIC_SUPABASE_URL | PUBLIC_SUPABASE_URL and VITE_SUPABASE_ANON_KEY | NEXT_PUBLIC_SUPABASE_ANON_KEY | PUBLIC_SUPABASE_ANON_KEY | VITE_SUPABASE_PUBLISHABLE_KEY'
+      );
       setCloudConfigured(false);
       setLoading(false);
       return;
