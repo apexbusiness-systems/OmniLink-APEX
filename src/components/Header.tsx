@@ -11,9 +11,6 @@ export const Header = () => {
             className="h-6 md:h-7 w-auto opacity-90 hover:opacity-100 transition-opacity" 
             title="Built Canadian"
           />
-          <span className="font-semibold tracking-tight text-sm md:text-base">
-            APEX Business Systems
-          </span>
         </div>
 
         {/* Right group - empty for now, nav can go here */}
