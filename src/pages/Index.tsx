@@ -40,7 +40,7 @@ const Index = () => {
     { name: 'TL247', icon: icon6, alt: 'TL247 app icon' },
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
     { name: 'RobuxMinerPro', icon: icon7, alt: 'RobuxMinerPro icon' },
-    { name: 'App 9', icon: icon8, alt: 'App 9 icon' },
+    { name: 'JubeeLove', icon: icon8, alt: 'JubeeLove icon' },
   ];
 
   return (
