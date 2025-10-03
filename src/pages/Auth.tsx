@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Link2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import appIcon from '@/assets/app_icon.svg';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -119,9 +120,12 @@ const Auth = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-                <Link2 className="h-6 w-6 text-primary-foreground" />
-              </div>
+              <img 
+                src={appIcon} 
+                alt="APEX Business Systems logo" 
+                className="h-16 w-16"
+                aria-hidden="true"
+              />
             </div>
             <CardTitle className="text-2xl">APEX Admin Login</CardTitle>
             <CardDescription>Authorized access only</CardDescription>

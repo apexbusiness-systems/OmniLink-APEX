@@ -1,14 +1,14 @@
 {
-  "name": "OmniLink - Unified Link & File Management",
-  "short_name": "OmniLink",
-  "description": "Centralize your links, files, integrations, and automations in one powerful dashboard.",
+  "name": "APEX Business Systems - Apps for Life",
+  "short_name": "APEX",
+  "description": "Unified tools for work and life. Professional business applications and solutions.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "any",
-  "categories": ["productivity", "utilities"],
+  "categories": ["productivity", "business", "utilities"],
   "icons": [
     {
       "src": "/icons/icon-192.png",

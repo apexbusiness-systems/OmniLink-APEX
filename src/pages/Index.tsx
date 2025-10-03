@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, RefreshCw, Trash2 } from 'lucide-react';
+import appIcon from '@/assets/app_icon.svg';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -38,6 +39,13 @@ const Index = () => {
       {/* Hero Section */}
       <section className="flex min-h-screen items-center justify-center px-4 py-20">
         <div className="text-center space-y-6 max-w-[920px] w-full">
+          <div className="flex justify-center mb-8">
+            <img 
+              src={appIcon} 
+              alt="APEX Business Systems logo" 
+              className="w-24 h-24 md:w-32 md:h-32"
+            />
+          </div>
           <h1 className="text-6xl md:text-7xl font-bold leading-tight tracking-tight">
             APEX Business Systems, Apps for Life!
           </h1>
