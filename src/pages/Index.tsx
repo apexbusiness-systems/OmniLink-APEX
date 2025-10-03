@@ -38,8 +38,8 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="flex min-h-screen items-center justify-center px-4 py-20 pt-28">
-        <div className="text-center space-y-4 max-w-[920px] w-full">
-          <div className="flex justify-center mb-3 md:mb-4">
+        <div className="text-center space-y-2 max-w-[920px] w-full">
+          <div className="flex justify-center mb-1">
             <img 
               src={apexWordmark} 
               alt="APEX Business Systems wordmark" 
