@@ -39,7 +39,7 @@ const Index = () => {
     { name: 'Google Dev Console', icon: icon5, alt: 'Google Dev Console app icon' },
     { name: 'Apple Dev Connect', icon: icon6, alt: 'Apple Dev Connect app icon' },
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
-    { name: 'App 8', icon: icon7, alt: 'App 8 icon' },
+    { name: 'RobuxMinerPro', icon: icon7, alt: 'RobuxMinerPro icon' },
     { name: 'App 9', icon: icon8, alt: 'App 9 icon' },
   ];
 
@@ -100,7 +100,7 @@ const Index = () => {
                         <img 
                           src={app.icon} 
                           alt={app.alt}
-                          className="w-16 h-16 md:w-20 md:h-20 mb-2"
+                          className={app.name === 'RobuxMinerPro' ? "w-24 h-24 md:w-30 md:h-30 mb-2" : "w-16 h-16 md:w-20 md:h-20 mb-2"}
                         />
                         <span className="text-xs md:text-sm font-medium text-[hsl(var(--navy))]">
                           {app.name}
@@ -142,7 +142,7 @@ const Index = () => {
                     <img 
                       src={app.icon} 
                       alt={app.alt}
-                      className="w-24 h-24 md:w-32 md:h-32 mb-3"
+                      className={app.name === 'RobuxMinerPro' ? "w-36 h-36 md:w-48 md:h-48 mb-3" : "w-24 h-24 md:w-32 md:h-32 mb-3"}
                     />
                     <span className="text-sm md:text-base font-semibold text-[hsl(var(--navy))]">
                       {app.name}
