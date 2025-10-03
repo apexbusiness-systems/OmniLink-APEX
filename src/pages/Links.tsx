@@ -16,9 +16,7 @@ type Link = {
   title: string;
   url: string;
   description: string | null;
-  category: string | null;
   is_favorite: boolean;
-  clicks: number;
   created_at: string;
   updated_at: string;
 };
@@ -33,7 +31,6 @@ const Links = () => {
     title: '',
     url: '',
     description: '',
-    category: '',
   });
 
   const fetchLinks = async () => {
@@ -79,7 +76,7 @@ const Links = () => {
     } else {
       toast({ title: 'Link created successfully!' });
       setDialogOpen(false);
-      setNewLink({ title: '', url: '', description: '', category: '' });
+      setNewLink({ title: '', url: '', description: '' });
       fetchLinks();
     }
   };
@@ -165,14 +162,6 @@ const Links = () => {
                   onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={newLink.category}
-                  onChange={(e) => setNewLink({ ...newLink, category: e.target.value })}
-                />
-              </div>
               <Button type="submit" className="w-full">Create Link</Button>
             </form>
           </DialogContent>
@@ -220,13 +209,6 @@ const Links = () => {
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Visit Link
               </a>
-              {link.category && (
-                <div className="mt-2">
-                  <span className="text-xs bg-secondary px-2 py-1 rounded">
-                    {link.category}
-                  </span>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
