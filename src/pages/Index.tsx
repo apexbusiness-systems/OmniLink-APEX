@@ -35,7 +35,7 @@ const Index = () => {
     { name: 'TradeLine 24/7', icon: tradeline247, alt: 'TradeLine 24/7 app icon' },
     { name: 'Built Canadian', icon: icon2, alt: 'Built Canadian app icon' },
     { name: 'AutoRepAi', icon: icon3, alt: 'AutoRepAi app icon' },
-    { name: 'IONOS Mail', icon: icon4, alt: 'IONOS Mail app icon' },
+    { name: 'FLOWBills', icon: icon4, alt: 'FLOWBills app icon' },
     { name: 'RBP', icon: icon5, alt: 'RBP app icon' },
     { name: 'TL247', icon: icon6, alt: 'TL247 app icon' },
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
