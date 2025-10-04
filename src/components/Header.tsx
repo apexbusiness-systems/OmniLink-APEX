@@ -16,7 +16,7 @@ export const Header = () => {
 
         {/* Center - Wordmark */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <img src={apexWordmark} alt="Apex" className="h-[142px] w-auto" style={{ transform: 'skewX(-5deg) translateY(0.2cm)' }} />
+          <img src={apexWordmark} alt="Apex" className="h-[142px] w-auto" style={{ transform: 'skewX(-5deg) translateY(0.2cm) scaleX(1.2)' }} />
         </div>
 
         {/* Right group - empty for now, nav can go here */}
