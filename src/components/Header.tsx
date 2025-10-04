@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import builtCanadianBadge from '@/assets/built_canadian_badge.svg';
 import apexEmblem from '@/assets/apex_emblem_logo.svg';
+import apexWordmark from '@/assets/apex_wordmark_hero.svg';
 import SecretLogin from '@/components/SecretLogin';
 
 export const Header = () => {
@@ -11,6 +12,11 @@ export const Header = () => {
           <SecretLogin>
             <img src={builtCanadianBadge} alt="" aria-hidden="true" className="h-6 md:h-7 w-auto opacity-90 hover:opacity-100 transition-opacity" title="Built Canadian" />
           </SecretLogin>
+        </div>
+
+        {/* Center - Wordmark */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <img src={apexWordmark} alt="Apex" className="h-10 w-auto" style={{ transform: 'skewX(-5deg)' }} />
         </div>
 
         {/* Right group - empty for now, nav can go here */}
