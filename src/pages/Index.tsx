@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
+import { Download } from 'lucide-react';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { toast } from 'sonner';
 import tradeline247 from '@/assets/icons/icon-1.svg';
 import icon2 from '@/assets/icons/icon-2.svg';
 import icon3 from '@/assets/icons/icon-3.svg';
@@ -15,6 +18,12 @@ import strideGuide from '@/assets/icons/strideguide.png';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { isInstallable, installPWA } = usePWAInstall();
+
+  const handlePWAInstall = () => {
+    installPWA();
+    toast.success('Installing APEX App...');
+  };
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -86,17 +95,26 @@ const Index = () => {
                     aria-label={`${app.name} tile`}
                     className={`aspect-square rounded-xl p-4 flex flex-col items-center justify-center text-center transition-transform hover:scale-105 ${
                       app.icon 
-                        ? 'bg-white border-2 border-[hsl(var(--navy))] shadow-lg' 
+                     ? 'bg-white border-2 border-[hsl(var(--navy))] shadow-lg' 
                         : 'bg-white border-2 border-dashed border-muted-foreground/30'
                     }`}
+                    onClick={app.name === 'APEX' && isInstallable ? handlePWAInstall : undefined}
+                    style={app.name === 'APEX' && isInstallable ? { cursor: 'pointer' } : undefined}
                   >
                     {app.icon ? (
                       <>
-                        <img 
-                          src={app.icon} 
-                          alt={app.alt}
-                          className="w-icon-sm h-icon-sm md:w-icon-md md:h-icon-md mb-2 object-cover rounded-lg"
-                        />
+                        <div className="relative">
+                          <img 
+                            src={app.icon} 
+                            alt={app.alt}
+                            className="w-icon-sm h-icon-sm md:w-icon-md md:h-icon-md mb-2 object-cover rounded-lg"
+                          />
+                          {app.name === 'APEX' && isInstallable && (
+                            <div className="absolute -top-1 -right-1 bg-[hsl(var(--navy))] text-white rounded-full p-1 shadow-lg animate-pulse">
+                              <Download className="w-3 h-3" />
+                            </div>
+                          )}
+                        </div>
                         <span className="text-xs md:text-sm font-medium text-[hsl(var(--navy))]">
                           {app.name}
                         </span>
@@ -131,14 +149,23 @@ const Index = () => {
                     ? 'bg-white border-2 border-[hsl(var(--navy))] shadow-lg hover:shadow-xl' 
                     : 'bg-white border-2 border-dashed border-muted-foreground/30'
                 }`}
+                onClick={app.name === 'APEX' && isInstallable ? handlePWAInstall : undefined}
+                style={app.name === 'APEX' && isInstallable ? { cursor: 'pointer' } : undefined}
               >
                 {app.icon ? (
                   <>
-                    <img 
-                      src={app.icon} 
-                      alt={app.alt}
-                      className="w-icon-lg h-icon-lg md:w-icon-xl md:h-icon-xl mb-3 object-cover rounded-lg"
-                    />
+                    <div className="relative">
+                      <img 
+                        src={app.icon} 
+                        alt={app.alt}
+                        className="w-icon-lg h-icon-lg md:w-icon-xl md:h-icon-xl mb-3 object-cover rounded-lg"
+                      />
+                      {app.name === 'APEX' && isInstallable && (
+                        <div className="absolute -top-2 -right-2 bg-[hsl(var(--navy))] text-white rounded-full p-2 shadow-lg animate-pulse">
+                          <Download className="w-4 h-4 md:w-5 md:h-5" />
+                        </div>
+                      )}
+                    </div>
                     <span className="text-sm md:text-base font-semibold text-[hsl(var(--navy))]">
                       {app.name}
                     </span>
