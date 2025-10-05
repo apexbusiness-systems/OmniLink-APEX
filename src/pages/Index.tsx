@@ -8,7 +8,7 @@ import icon3 from '@/assets/icons/icon-3.svg';
 import icon4 from '@/assets/icons/icon-4.svg';
 import icon5 from '@/assets/icons/icon-5.svg';
 import icon6 from '@/assets/icons/icon-6.svg';
-import icon7 from '@/assets/icons/icon-7.svg';
+import keepsafeIcon from '@/assets/keepsafe_appicon.svg';
 import icon8 from '@/assets/icons/icon-8.svg';
 import icon9 from '@/assets/icons/icon-9.svg';
 import strideGuide from '@/assets/icons/strideguide.png';
@@ -39,7 +39,7 @@ const Index = () => {
     { name: 'RBP', icon: icon5, alt: 'RBP app icon' },
     { name: 'APEX', icon: icon6, alt: 'APEX app icon' },
     { name: 'StrideGuide', icon: strideGuide, alt: 'StrideGuide app icon' },
-    { name: 'RobuxMinerPro', icon: icon7, alt: 'RobuxMinerPro icon' },
+    { name: 'KeepSafe', icon: keepsafeIcon, alt: 'KeepSafe icon' },
     { name: 'JubeeLove', icon: icon8, alt: 'JubeeLove icon' },
   ];
 
