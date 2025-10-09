@@ -46,7 +46,10 @@ const ApexAssistant = () => {
         body: { query, history },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('APEX Assistant Error:', error);
+        throw error;
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -55,10 +58,22 @@ const ApexAssistant = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      toast({
+        title: 'APEX Response',
+        description: 'Successfully retrieved knowledge',
+      });
     } catch (error: any) {
+      console.error('APEX error details:', error);
+      
+      const errorMsg = error.message || 'Failed to get response from APEX';
+      const isAuthError = errorMsg.includes('API key') || errorMsg.includes('configured');
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to get response from APEX',
+        description: isAuthError 
+          ? 'OPENAI_API_KEY not configured. Please add it in backend settings.'
+          : errorMsg,
         variant: 'destructive',
       });
     } finally {

@@ -89,6 +89,8 @@ serve(async (req) => {
       { role: 'user', content: query },
     ];
 
+    console.log('APEX: Processing query:', query);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -98,33 +100,43 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-5-2025-08-07',
         messages,
-        temperature: 0.7,
         max_completion_tokens: 2000,
+        response_format: { type: "json_object" }
       }),
     });
+    
+    console.log('OpenAI response status:', response.status);
 
     if (!response.ok) {
       const error = await response.text();
       console.error('OpenAI API error:', error);
       return new Response(
-        JSON.stringify({ error: 'AI request failed', details: error }),
+        JSON.stringify({ 
+          error: 'AI request failed', 
+          details: error,
+          message: 'Please ensure OPENAI_API_KEY is configured correctly' 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
     const assistantMessage = data.choices[0].message.content;
+    
+    console.log('APEX: Received response');
 
     // Try to parse as JSON for structured output
     let structuredResponse;
     try {
       structuredResponse = JSON.parse(assistantMessage);
-    } catch {
+      console.log('APEX: Successfully parsed structured response');
+    } catch (e) {
+      console.log('APEX: Response not in JSON format, wrapping as plain text');
       // If not JSON, return as plain text
       structuredResponse = {
         summary: [assistantMessage.substring(0, 200)],
         details: [],
-        next_actions: [],
+        next_actions: ["APEX returned unstructured output - try rephrasing your query"],
         sources_used: ['AI response'],
         notes: assistantMessage,
       };
