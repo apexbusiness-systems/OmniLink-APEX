@@ -5,8 +5,10 @@ const CACHE_NAME = 'omnilink-v1';
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icons/icon.svg',
+  // TODO: Generate PNG icons and uncomment:
+  // '/icons/icon-192.png',
+  // '/icons/icon-512.png',
 ];
 
 // Install event - cache static assets
