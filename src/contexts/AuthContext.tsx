@@ -3,7 +3,13 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { CloudSetupMessage } from '@/components/CloudSetupMessage';
-import { registerDevice, markDeviceTrusted } from '@/zero-trust/deviceRegistry';
+import {
+  markDeviceTrusted,
+  syncOnLogin,
+  startBackgroundDeviceSync,
+  stopBackgroundDeviceSync,
+  upsertDevice,
+} from '@/zero-trust/deviceRegistry';
 import { recordAuditEvent } from '@/security/auditLog';
 
 interface AuthContextType {
@@ -69,23 +75,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      stopBackgroundDeviceSync();
+      return;
+    }
     const deviceId = localStorage.getItem('device_id') || crypto.randomUUID();
     localStorage.setItem('device_id', deviceId);
     const fingerprint = navigator.userAgent;
-    registerDevice(session.user.id, deviceId, fingerprint);
-    markDeviceTrusted(deviceId);
-    recordAuditEvent({
-      actorId: session.user.id,
-      actionType: 'login',
-      resourceType: 'session',
-      resourceId: deviceId,
-      metadata: { fingerprint },
-    });
+
+    (async () => {
+      await syncOnLogin(session.user.id);
+      await upsertDevice(session.user.id, deviceId, { fingerprint }, 'suspect');
+      await markDeviceTrusted(deviceId);
+      startBackgroundDeviceSync(session.user.id);
+      recordAuditEvent({
+        actorId: session.user.id,
+        actionType: 'login',
+        resourceType: 'session',
+        resourceId: deviceId,
+        metadata: { fingerprint },
+      });
+    })();
+    return () => stopBackgroundDeviceSync();
   }, [session]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    stopBackgroundDeviceSync();
     if (session?.user) {
       recordAuditEvent({
         actorId: session.user.id,
