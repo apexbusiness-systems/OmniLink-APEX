@@ -1,6 +1,7 @@
 /**
  * Connection pooling and resource management utilities
  */
+import { recordLoopHeartbeat } from '@/guardian/heartbeat';
 
 interface PooledConnection {
   id: string;
@@ -19,7 +20,10 @@ class ConnectionPool {
     this.idleTimeout = idleTimeout;
     
     // Clean up idle connections periodically
-    setInterval(() => this.cleanupIdleConnections(), 30000);
+    setInterval(() => {
+      this.cleanupIdleConnections();
+      recordLoopHeartbeat('connection-pool-cleanup');
+    }, 30000);
   }
 
   acquire(id: string): boolean {

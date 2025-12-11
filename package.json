@@ -8,7 +8,14 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:prompt-defense": "vitest run tests/prompt-defense",
+    "guardian:status": "tsx scripts/guardian/status.ts",
+    "zero-trust:baseline": "tsx scripts/zero-trust/baseline-cli.ts",
+    "dr:test": "tsx scripts/dr/run-dr-test.ts --dry-run",
+    "prompt-defense:analyze": "tsx scripts/prompt-defense/analyze_flags.ts",
+    "security:audit": "node -e \"const fs=require('fs');const dir='security';if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});\" && npm audit --json > security/npm-audit-latest.json || true"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -76,6 +83,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.4",
     "lovable-tagger": "^1.1.10",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",

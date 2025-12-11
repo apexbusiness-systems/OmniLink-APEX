@@ -3,6 +3,7 @@
  */
 
 import { logSecurityEvent } from './monitoring';
+import { startGuardianLoops } from '@/guardian/loops';
 
 /**
  * Generate CSRF token
@@ -233,5 +234,6 @@ export function initializeSecurity(): void {
     console.warn('⚠️ Suspicious activity detected');
   }
   
+  startGuardianLoops();
   console.log('✅ Security initialized');
 }

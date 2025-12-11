@@ -2,6 +2,7 @@
  * Request deduplication and caching utility
  * Prevents duplicate requests to the same endpoint
  */
+import { recordLoopHeartbeat } from '@/guardian/heartbeat';
 
 interface CacheEntry<T> {
   data: T;
@@ -46,6 +47,8 @@ function cleanup(): void {
       pendingRequests.delete(key);
     }
   }
+
+  recordLoopHeartbeat('request-cache-cleanup');
 }
 
 // Run cleanup every minute

@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { CloudSetupMessage } from '@/components/CloudSetupMessage';
+import { registerDevice, markDeviceTrusted } from '@/zero-trust/deviceRegistry';
+import { recordAuditEvent } from '@/security/auditLog';
 
 interface AuthContextType {
   user: User | null;
@@ -66,8 +68,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!session?.user) return;
+    const deviceId = localStorage.getItem('device_id') || crypto.randomUUID();
+    localStorage.setItem('device_id', deviceId);
+    const fingerprint = navigator.userAgent;
+    registerDevice(session.user.id, deviceId, fingerprint);
+    markDeviceTrusted(deviceId);
+    recordAuditEvent({
+      actorId: session.user.id,
+      actionType: 'login',
+      resourceType: 'session',
+      resourceId: deviceId,
+      metadata: { fingerprint },
+    });
+  }, [session]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
+    if (session?.user) {
+      recordAuditEvent({
+        actorId: session.user.id,
+        actionType: 'logout',
+        resourceType: 'session',
+        resourceId: 'self',
+      });
+    }
     navigate('/auth');
   };
 
