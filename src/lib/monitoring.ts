@@ -67,43 +67,6 @@ function persistLog(key: string, entry: unknown, max: number) {
   }
 }
 
-async function ensureSentry() {
-  if (sentryInitialized || sentry) return sentry;
-
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (!dsn) return null;
-
-  try {
-    sentry = await import('https://esm.sh/@sentry/browser@7.120.1');
-    const { BrowserTracing } = await import('https://esm.sh/@sentry/tracing@7.120.1');
-
-    sentry.init({
-      dsn,
-      environment: getEnvironment(),
-      release: `${appConfig.name}@${appConfig.version}`,
-      integrations: [new BrowserTracing()],
-      tracesSampleRate: 0.2,
-    });
-    sentryInitialized = true;
-    console.log('✅ Sentry monitoring initialized');
-  } catch (error) {
-    console.warn('Sentry initialization failed; continuing without Sentry', error);
-  }
-
-  return sentry;
-}
-
-function persistLog(key: string, entry: any, max: number) {
-  try {
-    const logs = JSON.parse(localStorage.getItem(key) || '[]');
-    logs.push(entry);
-    if (logs.length > max) logs.shift();
-    localStorage.setItem(key, JSON.stringify(logs));
-  } catch {
-    // non-fatal
-  }
-}
-
 /**
  * Log error to monitoring service
  */
@@ -141,9 +104,11 @@ export function logPerformance(event: PerformanceEvent): void {
  */
 export async function logAnalyticsEvent(
   eventName: string,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ): Promise<void> {
-  console.log('📈 Analytics:', eventName, properties);
+  if (import.meta.env.DEV) {
+    console.log('📈 Analytics:', eventName, properties);
+  }
 
   const s = await ensureSentry();
   if (s?.addBreadcrumb) {
@@ -163,7 +128,9 @@ export async function logSecurityEvent(
   eventType: 'auth_failed' | 'rate_limit' | 'suspicious_activity' | 'csrf_attempt',
   details?: Record<string, unknown>
 ): Promise<void> {
-  console.warn('🔒 Security Event:', eventType, details);
+  if (import.meta.env.DEV) {
+    console.warn('🔒 Security Event:', eventType, details);
+  }
 
   const entry = {
     type: eventType,
@@ -189,7 +156,7 @@ export async function logSecurityEvent(
  */
 export function trackUserAction(
   action: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): void {
   void logAnalyticsEvent('user_action', { action, ...metadata });
 }
@@ -274,7 +241,7 @@ export function getErrorLogs(): unknown[] {
 /**
  * Get all security logs (for debugging)
  */
-export function getSecurityLogs(): any[] {
+export function getSecurityLogs(): unknown[] {
   try {
     return JSON.parse(localStorage.getItem('security_logs') || '[]');
   } catch {
