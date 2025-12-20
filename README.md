@@ -89,23 +89,24 @@ This project is built with:
 
 ## How can I deploy this project?
 
-This project is deployed via **Lovable**. To deploy:
+This project is deployed via **Vercel**. The app uses Supabase as the backend (no Lovable Cloud dependency).
 
-1. Open your [Lovable Project](https://lovable.dev/projects/cc83abb4-1856-45a1-b4fe-abc5f63bcf57)
-2. Click on **Share → Publish**
+### Setting Environment Variables in Vercel
 
-### Setting Environment Variables in Lovable
+For production deployment on Vercel, set your environment variables:
 
-For production deployment on Lovable, set your environment variables in Lovable's project settings:
-
-1. Go to your Lovable project
-2. Navigate to **Project Settings → Environment Variables**
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Select your project → **Settings** → **Environment Variables**
 3. Add your Supabase credentials:
-   - `VITE_SUPABASE_URL` = `https://rtopreovkywofgwgmozi.supabase.co`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY` = `sb_publishable_fhOZZrH8blDisp915SKTaw_GswiPZpk`
-4. Save and redeploy
+   - `VITE_SUPABASE_URL` = `https://your-project-id.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `your-anon-key-here`
+4. Set for: **Production**, **Preview**, and **Development**
+5. Redeploy your application
 
-**Note:** Lovable environment variables are separate from GitHub Secrets. Set them in Lovable's UI for production deployments.
+**Note:** 
+- The app is now **fully independent** of Lovable Cloud
+- All data operations use Supabase directly
+- See `MIGRATION_RUNBOOK.md` for detailed deployment instructions
 
 ## Can I connect a custom domain to my Lovable project?
 
