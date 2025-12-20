@@ -1,7 +1,15 @@
 import { calculateBackoffDelay } from '@/lib/backoff';
 import { logAnalyticsEvent, logError } from '@/lib/monitoring';
 import { persistentGet, persistentSet } from '@/libs/persistence';
-import type { DeviceInfo } from '@/integrations/lovable/types';
+import { supabase } from '@/integrations/supabase/client';
+
+// Device info interface (migrated from Lovable types)
+interface DeviceInfo {
+  device_info: Record<string, unknown>;
+  last_seen: string;
+  device_id: string;
+  user_id: string;
+}
 
 export type DeviceStatus = 'trusted' | 'suspect' | 'blocked';
 
@@ -20,27 +28,8 @@ type QueuedUpsert = {
   status: 'pending' | 'failed';
 };
 
-const REGISTRY_KEY = 'lovable_device_registry_v1';
-const UPSERT_QUEUE_KEY = 'lovable_device_upserts_v1';
-
-// Use Supabase Edge Function if available, otherwise fall back to local proxy
-function getDeviceProxyUrl(): string {
-  // Check if we should use Supabase function
-  const useSupabaseFunction = import.meta.env.VITE_USE_SUPABASE_LOVABLE !== 'false';
-  if (useSupabaseFunction && typeof window !== 'undefined') {
-    // Get Supabase URL from env
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (supabaseUrl) {
-      // Extract project ref from Supabase URL
-      const url = new URL(supabaseUrl);
-      return `${url.origin}/functions/v1/lovable-device`;
-    }
-  }
-  // Fallback to local proxy or custom URL
-  return import.meta.env.VITE_LOVABLE_DEVICE_PROXY ?? '/api/lovable/device';
-}
-
-const DEVICE_PROXY_URL = getDeviceProxyUrl();
+const REGISTRY_KEY = 'device_registry_v1'; // Updated key name (no longer Lovable-specific)
+const UPSERT_QUEUE_KEY = 'device_upserts_v1'; // Updated key name
 const MAX_ATTEMPTS = Number(import.meta.env.VITE_DEVICE_MAX_ATTEMPTS ?? 5);
 const BASE_DELAY_MS = Number(import.meta.env.VITE_DEVICE_RETRY_BASE_MS ?? 500);
 const MAX_DELAY_MS = Number(import.meta.env.VITE_DEVICE_RETRY_MAX_MS ?? 10_000);
@@ -123,58 +112,35 @@ function mergeByLastSeen(local: DeviceRecord[], remote: DeviceRecord[]): DeviceR
   return Array.from(merged.values());
 }
 
+/**
+ * Fetch device registry directly from Supabase device_registry table
+ * Replaces Lovable API dependency
+ */
 async function fetchRemoteRegistry(userId: string): Promise<DeviceRecord[]> {
-  // Graceful degradation: if proxy URL is not configured, return empty array (enterprise resilience)
-  if (!DEVICE_PROXY_URL || DEVICE_PROXY_URL === '/api/lovable/device') {
-    if (typeof window !== 'undefined') {
-      // In browser, server proxy may not be available - use local cache only (idempotent)
-      return [];
-    }
-  }
-
-  const controller = new AbortController();
-  const timeoutMs = Number(import.meta.env.VITE_DEVICE_TIMEOUT_MS ?? 10_000);
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  
   try {
-    // Check if using Supabase function (needs auth header)
-    const isSupabaseFunction = DEVICE_PROXY_URL.includes('/functions/v1/');
-    const headers: HeadersInit = { 'X-User-Id': userId };
-    
-    if (isSupabaseFunction && typeof window !== 'undefined') {
-      // Get auth token from Supabase client if available
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+    const { data, error } = await supabase
+      .from('device_registry')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_seen', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch device registry: ${error.message}`);
     }
-    
-    const res = await fetch(`${DEVICE_PROXY_URL}?user_id=${encodeURIComponent(userId)}`, {
-      method: 'GET',
-      headers,
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(`Device registry fetch failed: ${res.status}`);
-    }
-    const json = await res.json();
-    const devices = (json.devices as DeviceInfo[]) ?? [];
-    return devices.map((d) => ({
+
+    return (data || []).map((d) => ({
       deviceId: d.device_id,
       userId: d.user_id,
       lastSeen: d.last_seen,
-      deviceInfo: d.device_info ?? {},
-      status: (d.device_info?.status ?? 'suspect') as DeviceStatus,
+      deviceInfo: d.device_info as Record<string, unknown>,
+      status: d.status as DeviceStatus,
     }));
   } catch (error) {
     // Network errors are expected when backend is unavailable - use local cache (idempotent)
-    if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) {
+    if (error instanceof Error && error.message.includes('fetch')) {
       return []; // Return empty, will use local cache
     }
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -202,37 +168,21 @@ async function flushUpserts(force = false) {
     }
 
     try {
-      // Graceful degradation: if proxy URL is not configured, skip server sync (enterprise resilience)
-      if (!DEVICE_PROXY_URL || DEVICE_PROXY_URL === '/api/lovable/device') {
-        if (typeof window !== 'undefined') {
-          // In browser, server proxy may not be available - this is OK, device stays in local cache (idempotent)
-          throw new Error('Device proxy not available - device cached locally');
-        }
-      }
+      // Write directly to Supabase device_registry table
+      const { error } = await supabase
+        .from('device_registry')
+        .upsert({
+          user_id: item.record.userId,
+          device_id: item.record.deviceId,
+          device_info: item.record.deviceInfo,
+          status: item.record.status || 'suspect',
+          last_seen: item.record.lastSeen,
+        }, {
+          onConflict: 'user_id,device_id',
+        });
 
-      // Check if using Supabase function (needs auth header)
-      const isSupabaseFunction = DEVICE_PROXY_URL.includes('/functions/v1/');
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-User-Id': item.record.userId,
-      };
-      
-      if (isSupabaseFunction && typeof window !== 'undefined') {
-        // Get auth token from Supabase client if available
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
-      }
-
-      const response = await fetch(DEVICE_PROXY_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ device: toDeviceInfo(item.record) }),
-      });
-      if (!response.ok) {
-        throw new Error(`Device upsert failed: ${response.status}`);
+      if (error) {
+        throw new Error(`Device upsert failed: ${error.message}`);
       }
 
       updated = updated.filter((u) => u.record.deviceId !== item.record.deviceId);

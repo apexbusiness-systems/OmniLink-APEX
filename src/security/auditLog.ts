@@ -1,7 +1,13 @@
 import { calculateBackoffDelay } from '@/lib/backoff';
 import { logAnalyticsEvent, logError } from '@/lib/monitoring';
 import { persistentGet, persistentSet } from '@/libs/persistence';
-import type { AuditEventPayload } from '@/integrations/lovable/types';
+import { supabase } from '@/integrations/supabase/client';
+
+/**
+ * Audit event payload interface
+ * Previously used Lovable API, now writes directly to Supabase audit_logs table
+ */
+export interface AuditEventPayload {
 
 type QueuedAuditEvent = AuditEventPayload & {
   attempts: number;
@@ -10,26 +16,7 @@ type QueuedAuditEvent = AuditEventPayload & {
 };
 
 const RECENT_LIMIT = 200;
-const QUEUE_KEY = 'lovable_audit_queue_v1';
-
-// Use Supabase Edge Function if available, otherwise fall back to local proxy
-function getAuditProxyUrl(): string {
-  // Check if we should use Supabase function
-  const useSupabaseFunction = import.meta.env.VITE_USE_SUPABASE_LOVABLE !== 'false';
-  if (useSupabaseFunction && typeof window !== 'undefined') {
-    // Get Supabase URL from env
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (supabaseUrl) {
-      // Extract project ref from Supabase URL
-      const url = new URL(supabaseUrl);
-      return `${url.origin}/functions/v1/lovable-audit`;
-    }
-  }
-  // Fallback to local proxy or custom URL
-  return import.meta.env.VITE_LOVABLE_AUDIT_PROXY ?? '/api/lovable/audit';
-}
-
-const PROXY_URL = getAuditProxyUrl();
+const QUEUE_KEY = 'audit_queue_v1'; // Updated key name (no longer Lovable-specific)
 const MAX_ATTEMPTS = Number(import.meta.env.VITE_AUDIT_MAX_ATTEMPTS ?? 5);
 const BASE_DELAY_MS = Number(import.meta.env.VITE_AUDIT_RETRY_BASE_MS ?? 500);
 const MAX_DELAY_MS = Number(import.meta.env.VITE_AUDIT_RETRY_MAX_MS ?? 10_000);
@@ -68,55 +55,23 @@ function scheduleFlush(delay = 0) {
   }, delay);
 }
 
-async function sendToProxy(entry: AuditEventPayload): Promise<void> {
-  // Graceful degradation: if proxy URL is not configured, skip server sync (enterprise resilience)
-  if (!PROXY_URL || PROXY_URL === '/api/lovable/audit') {
-    // Check if we're in a browser environment without server proxy
-    if (typeof window !== 'undefined') {
-      // In browser, server proxy may not be available - this is OK, events stay in queue
-      throw new Error('Audit proxy not available - events will be queued locally');
-    }
-  }
+/**
+ * Write audit event directly to Supabase audit_logs table
+ * Replaces Lovable API dependency
+ */
+async function writeToSupabase(entry: AuditEventPayload): Promise<void> {
+  const { error } = await supabase.from('audit_logs').insert({
+    id: entry.id,
+    actor_id: entry.actorId || null,
+    action_type: entry.actionType,
+    resource_type: entry.resourceType || null,
+    resource_id: entry.resourceId || null,
+    metadata: entry.metadata || null,
+    created_at: entry.timestamp,
+  });
 
-  const controller = new AbortController();
-  const timeoutMs = Number(import.meta.env.VITE_AUDIT_TIMEOUT_MS ?? 10_000);
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  
-  try {
-    // Check if using Supabase function (needs auth header)
-    const isSupabaseFunction = PROXY_URL.includes('/functions/v1/');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'X-User-Id': entry.actorId ?? 'anonymous',
-    };
-    
-    if (isSupabaseFunction && typeof window !== 'undefined') {
-      // Get auth token from Supabase client if available
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-    }
-    
-    const response = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ event: entry }),
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new Error(`Audit proxy failed: ${response.status} ${text}`);
-    }
-  } catch (error) {
-    // Network errors are expected when backend is unavailable - events stay queued (idempotent)
-    if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) {
-      throw new Error('Network unavailable - events queued locally');
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
+  if (error) {
+    throw new Error(`Failed to write audit log to Supabase: ${error.message}`);
   }
 }
 
@@ -136,7 +91,7 @@ export async function flushQueue(force = false): Promise<void> {
     }
 
     try {
-      await sendToProxy(item);
+      await writeToSupabase(item);
       updated = updated.filter((e) => e.id !== item.id);
       consecutiveFlushFailures = 0;
       await logAnalyticsEvent('audit.flush.success', { id: item.id });
