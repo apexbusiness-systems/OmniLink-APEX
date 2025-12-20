@@ -6,100 +6,71 @@ const corsHeaders = {
 };
 
 interface DeviceInfo {
-  device_info: Record<string, any>;
+  device_info: Record<string, unknown>;
   last_seen: string;
   device_id: string;
   user_id: string;
+  status?: 'trusted' | 'suspect' | 'blocked';
 }
 
 interface DeviceRegistryResponse {
   devices: DeviceInfo[];
 }
 
-function getEnv(name: string): string | undefined {
-  return Deno.env.get(name);
+function getSupabaseClient() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-function getConfig() {
-  const baseUrl = getEnv('LOVABLE_API_BASE') ?? '';
-  const apiKey = getEnv('LOVABLE_API_KEY') ?? '';
-  const serviceRoleKey = getEnv('LOVABLE_SERVICE_ROLE_KEY');
-
-  if (!baseUrl || !apiKey) {
-    return null;
-  }
-
-  return { baseUrl, apiKey, serviceRoleKey };
-}
-
-async function requestLovable<T>(
-  path: string,
-  method: 'GET' | 'POST' = 'POST',
-  body?: any
-): Promise<T | undefined> {
-  const config = getConfig();
-  if (!config) {
-    return undefined;
-  }
-
-  const { baseUrl, apiKey, serviceRoleKey } = config;
-  const maxAttempts = 5;
-  let attempt = 0;
-  let lastError: unknown;
-
-  while (attempt < maxAttempts) {
-    attempt += 1;
-    try {
-      const response = await fetch(`${baseUrl}${path}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-          ...(serviceRoleKey ? { 'X-Service-Role': serviceRoleKey } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        lastError = new Error(`Lovable request failed (${response.status}): ${text}`);
-        if (response.status >= 500 && attempt < maxAttempts) {
-          const delay = Math.min(500 * 2 ** (attempt - 1), 10000);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-        throw lastError;
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        return (await response.json()) as T;
-      }
-      return undefined as T;
-    } catch (error) {
-      lastError = error;
-      if (attempt >= maxAttempts) break;
-      const delay = Math.min(500 * 2 ** (attempt - 1), 10000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('Unknown Lovable client error');
-}
-
+/**
+ * Fetch device registry directly from Supabase device_registry table
+ * Replaces Lovable API dependency
+ */
 async function getDeviceRegistry(userId: string): Promise<DeviceRegistryResponse> {
-  return requestLovable<DeviceRegistryResponse>(
-    `/device-registry?user_id=${encodeURIComponent(userId)}`,
-    'GET'
-  ) as Promise<DeviceRegistryResponse>;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('device_registry')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_seen', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch device registry: ${error.message}`);
+  }
+
+  const devices: DeviceInfo[] = (data || []).map((d) => ({
+    device_id: d.device_id,
+    user_id: d.user_id,
+    device_info: d.device_info as Record<string, unknown>,
+    last_seen: d.last_seen,
+    status: d.status,
+  }));
+
+  return { devices };
 }
 
+/**
+ * Upsert device directly to Supabase device_registry table
+ * Replaces Lovable API dependency
+ */
 async function upsertDevice(userId: string, device: DeviceInfo): Promise<void> {
-  await requestLovable<void>(
-    '/device-registry',
-    'POST',
-    { ...device, user_id: userId }
-  );
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from('device_registry')
+    .upsert({
+      user_id: userId,
+      device_id: device.device_id,
+      device_info: device.device_info,
+      status: device.status || 'suspect',
+      last_seen: device.last_seen,
+    }, {
+      onConflict: 'user_id,device_id',
+    });
+
+  if (error) {
+    throw new Error(`Failed to upsert device: ${error.message}`);
+  }
 }
 
 function json(data: any, status = 200): Response {
@@ -148,17 +119,6 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'GET') {
-      const config = getConfig();
-      if (!config) {
-        return json(
-          {
-            error: 'lovable_not_configured',
-            message: 'Lovable API credentials not configured',
-          },
-          503
-        );
-      }
-
       try {
         const registry = await getDeviceRegistry(userId);
         return json(registry, 200);
@@ -175,17 +135,6 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'POST') {
-      const config = getConfig();
-      if (!config) {
-        return json(
-          {
-            error: 'lovable_not_configured',
-            message: 'Lovable API credentials not configured',
-          },
-          503
-        );
-      }
-
       try {
         const body = (await req.json()) as { device: DeviceInfo };
         if (!body?.device?.device_id) {

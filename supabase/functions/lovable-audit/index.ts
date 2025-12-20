@@ -12,86 +12,38 @@ interface AuditEventPayload {
   actionType: string;
   resourceType?: string;
   resourceId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface AuditEventEnvelope {
   event: AuditEventPayload;
 }
 
-function getEnv(name: string): string | undefined {
-  return Deno.env.get(name);
+function getSupabaseClient() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-function getConfig() {
-  const baseUrl = getEnv('LOVABLE_API_BASE') ?? '';
-  const apiKey = getEnv('LOVABLE_API_KEY') ?? '';
-  const serviceRoleKey = getEnv('LOVABLE_SERVICE_ROLE_KEY');
+/**
+ * Write audit event directly to Supabase audit_logs table
+ * Replaces Lovable API dependency
+ */
+async function writeAuditEvent(payload: AuditEventPayload): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from('audit_logs').insert({
+    id: payload.id,
+    actor_id: payload.actorId || null,
+    action_type: payload.actionType,
+    resource_type: payload.resourceType || null,
+    resource_id: payload.resourceId || null,
+    metadata: payload.metadata || null,
+    created_at: payload.timestamp,
+  });
 
-  if (!baseUrl || !apiKey) {
-    return null;
+  if (error) {
+    throw new Error(`Failed to write audit log: ${error.message}`);
   }
-
-  return { baseUrl, apiKey, serviceRoleKey };
-}
-
-async function requestLovable<T>(
-  path: string,
-  method: 'GET' | 'POST' = 'POST',
-  body?: any
-): Promise<T | undefined> {
-  const config = getConfig();
-  if (!config) {
-    return undefined;
-  }
-
-  const { baseUrl, apiKey, serviceRoleKey } = config;
-  const maxAttempts = 5;
-  let attempt = 0;
-  let lastError: unknown;
-
-  while (attempt < maxAttempts) {
-    attempt += 1;
-    try {
-      const response = await fetch(`${baseUrl}${path}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-          ...(serviceRoleKey ? { 'X-Service-Role': serviceRoleKey } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        lastError = new Error(`Lovable request failed (${response.status}): ${text}`);
-        if (response.status >= 500 && attempt < maxAttempts) {
-          const delay = Math.min(500 * 2 ** (attempt - 1), 10000);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-        throw lastError;
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        return (await response.json()) as T;
-      }
-      return undefined as T;
-    } catch (error) {
-      lastError = error;
-      if (attempt >= maxAttempts) break;
-      const delay = Math.min(500 * 2 ** (attempt - 1), 10000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('Unknown Lovable client error');
-}
-
-async function postAuditEvent(payload: AuditEventPayload): Promise<void> {
-  await requestLovable<void>('/audit-events', 'POST', payload);
 }
 
 function unauthorized(): Response {
@@ -143,18 +95,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const config = getConfig();
-    if (!config) {
-      return new Response(
-        JSON.stringify({
-          error: 'lovable_not_configured',
-          message: 'Lovable API credentials not configured',
-        }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    await postAuditEvent(body.event);
+    await writeAuditEvent(body.event);
     return new Response(JSON.stringify({ status: 'ok' }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
