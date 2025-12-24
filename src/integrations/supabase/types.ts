@@ -167,6 +167,248 @@ export type Database = {
         }
         Relationships: []
       }
+      omnidash_incidents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          occurred_at: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: Database["public"]["Enums"]["omnidash_incident_severity"]
+          status: Database["public"]["Enums"]["omnidash_incident_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          occurred_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["omnidash_incident_severity"]
+          status?: Database["public"]["Enums"]["omnidash_incident_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          occurred_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["omnidash_incident_severity"]
+          status?: Database["public"]["Enums"]["omnidash_incident_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omnidash_incidents_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      omnidash_kpi_daily: {
+        Row: {
+          cash_days_to_cash: number | null
+          day: string
+          flowbills_demos: number
+          flowbills_paid_accounts: number
+          id: string
+          ops_sev1_incidents: number
+          tradeline_active_pilots: number
+          tradeline_churn_risks: number
+          tradeline_paid_starts: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cash_days_to_cash?: number | null
+          day?: string
+          flowbills_demos?: number
+          flowbills_paid_accounts?: number
+          id?: string
+          ops_sev1_incidents?: number
+          tradeline_active_pilots?: number
+          tradeline_churn_risks?: number
+          tradeline_paid_starts?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cash_days_to_cash?: number | null
+          day?: string
+          flowbills_demos?: number
+          flowbills_paid_accounts?: number
+          id?: string
+          ops_sev1_incidents?: number
+          tradeline_active_pilots?: number
+          tradeline_churn_risks?: number
+          tradeline_paid_starts?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omnidash_kpi_daily_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      omnidash_pipeline_items: {
+        Row: {
+          account_name: string
+          created_at: string
+          expected_mrr: number | null
+          id: string
+          last_touch_at: string | null
+          next_touch_at: string | null
+          notes: string | null
+          owner: string
+          probability: number | null
+          product: string
+          stage: Database["public"]["Enums"]["omnidash_pipeline_stage"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          created_at?: string
+          expected_mrr?: number | null
+          id?: string
+          last_touch_at?: string | null
+          next_touch_at?: string | null
+          notes?: string | null
+          owner: string
+          probability?: number | null
+          product: string
+          stage?: Database["public"]["Enums"]["omnidash_pipeline_stage"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          created_at?: string
+          expected_mrr?: number | null
+          id?: string
+          last_touch_at?: string | null
+          next_touch_at?: string | null
+          notes?: string | null
+          owner?: string
+          probability?: number | null
+          product?: string
+          stage?: Database["public"]["Enums"]["omnidash_pipeline_stage"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omnidash_pipeline_items_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      omnidash_settings: {
+        Row: {
+          anonymize_kpis: boolean
+          demo_mode: boolean
+          freeze_mode: boolean
+          power_block_duration_minutes: number
+          power_block_started_at: string | null
+          show_connected_ecosystem: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anonymize_kpis?: boolean
+          demo_mode?: boolean
+          freeze_mode?: boolean
+          power_block_duration_minutes?: number
+          power_block_started_at?: string | null
+          show_connected_ecosystem?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anonymize_kpis?: boolean
+          demo_mode?: boolean
+          freeze_mode?: boolean
+          power_block_duration_minutes?: number
+          power_block_started_at?: string | null
+          show_connected_ecosystem?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omnidash_settings_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      omnidash_today_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          next_action: string | null
+          order_index: number
+          power_block_duration_minutes: number
+          power_block_started_at: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_action?: string | null
+          order_index?: number
+          power_block_duration_minutes?: number
+          power_block_started_at?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_action?: string | null
+          order_index?: number
+          power_block_duration_minutes?: number
+          power_block_started_at?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omnidash_today_items_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -284,6 +526,17 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      omnidash_incident_severity: "sev1" | "sev2" | "sev3"
+      omnidash_incident_status: "open" | "monitoring" | "resolved"
+      omnidash_pipeline_stage:
+        | "lead"
+        | "contacted"
+        | "meeting"
+        | "proposal"
+        | "negotiation"
+        | "paid"
+        | "live"
+        | "lost"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -412,6 +665,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      omnidash_incident_severity: ["sev1", "sev2", "sev3"],
+      omnidash_incident_status: ["open", "monitoring", "resolved"],
+      omnidash_pipeline_stage: [
+        "lead",
+        "contacted",
+        "meeting",
+        "proposal",
+        "negotiation",
+        "paid",
+        "live",
+        "lost",
+      ],
     },
   },
 } as const
