@@ -2,15 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-// Conditionally import lovable-tagger if available
-let componentTagger: (() => any) | undefined;
-try {
-  const tagger = await import("lovable-tagger");
-  componentTagger = tagger.componentTagger;
-} catch {
-  // lovable-tagger not available, skip it
-}
-
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -40,33 +31,8 @@ export default defineConfig(({ mode }) => ({
     } : undefined,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Code splitting for better caching
-          if (id.includes('node_modules')) {
-            // Vendor chunks
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
-            if (id.includes('@radix-ui') || id.includes('@radix')) {
-              return 'vendor-ui';
-            }
-            if (id.includes('@tanstack')) {
-              return 'vendor-query';
-            }
-            // Other large dependencies
-            return 'vendor-other';
-          }
-          // Split by route/page for better code splitting
-          if (id.includes('/pages/')) {
-            const match = id.match(/\/pages\/([^/]+)/);
-            if (match) {
-              return `page-${match[1]}`;
-            }
-          }
-        },
+        // Removed manualChunks to let Vite handle chunking automatically
+        // This avoids issues with split chunks (e.g. React context issues)
         // Optimize chunk file names
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
