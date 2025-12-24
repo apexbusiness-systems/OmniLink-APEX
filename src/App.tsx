@@ -14,6 +14,7 @@ import { initializeSecurity } from './lib/security';
 import { logConfiguration } from './lib/config';
 import { createDebugLogger } from './lib/debug-logger';
 import { Loader2 } from 'lucide-react';
+import { OMNIDASH_FLAG } from './omnidash/types';
 
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -38,6 +39,11 @@ const BuiltCanadian = lazy(() => import("./pages/apps/BuiltCanadian"));
 const TechSpecs = lazy(() => import("./pages/TechSpecs"));
 const Diagnostics = lazy(() => import("./pages/Diagnostics"));
 const Health = lazy(() => import("./pages/Health"));
+const OmniDashLayout = lazy(() => import("./pages/OmniDash/OmniDashLayout"));
+const OmniDashToday = lazy(() => import("./pages/OmniDash/Today"));
+const OmniDashPipeline = lazy(() => import("./pages/OmniDash/Pipeline"));
+const OmniDashKpis = lazy(() => import("./pages/OmniDash/Kpis"));
+const OmniDashOps = lazy(() => import("./pages/OmniDash/Ops"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -175,6 +181,14 @@ const App = () => (
                 <Route path="/tech-specs" element={<TechSpecs />} />
                 <Route path="/diagnostics" element={<DashboardLayout><Diagnostics /></DashboardLayout>} />
                 <Route path="/health" element={<Health />} />
+              {OMNIDASH_FLAG && (
+                <Route path="/omnidash" element={<DashboardLayout><OmniDashLayout /></DashboardLayout>}>
+                  <Route index element={<OmniDashToday />} />
+                  <Route path="pipeline" element={<OmniDashPipeline />} />
+                  <Route path="kpis" element={<OmniDashKpis />} />
+                  <Route path="ops" element={<OmniDashOps />} />
+                </Route>
+              )}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

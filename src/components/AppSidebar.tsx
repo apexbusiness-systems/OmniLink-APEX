@@ -1,4 +1,4 @@
-import { Home, Link2, FileText, Zap, Package, LogOut, Brain } from 'lucide-react';
+import { Home, Link2, FileText, Zap, Package, LogOut, Brain, Gauge } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -14,20 +14,24 @@ import {
 } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
-
-const navItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Links', url: '/links', icon: Link2 },
-  { title: 'Files', url: '/files', icon: FileText },
-  { title: 'Automations', url: '/automations', icon: Zap },
-  { title: 'Integrations', url: '/integrations', icon: Package },
-  { title: 'APEX Assistant', url: '/apex', icon: Brain },
-];
+import { useAdminAccess } from '@/omnidash/hooks';
+import { OMNIDASH_FLAG } from '@/omnidash/types';
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdminAccess();
   const isCollapsed = state === 'collapsed';
+
+  const navItems = [
+    { title: 'Dashboard', url: '/dashboard', icon: Home },
+    { title: 'Links', url: '/links', icon: Link2 },
+    { title: 'Files', url: '/files', icon: FileText },
+    { title: 'Automations', url: '/automations', icon: Zap },
+    { title: 'Integrations', url: '/integrations', icon: Package },
+    { title: 'APEX Assistant', url: '/apex', icon: Brain },
+    ...(OMNIDASH_FLAG && isAdmin ? [{ title: 'OmniDash', url: '/omnidash', icon: Gauge }] : []),
+  ];
 
   return (
     <Sidebar className={isCollapsed ? 'w-14' : 'w-60'}>
