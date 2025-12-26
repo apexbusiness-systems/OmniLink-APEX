@@ -65,7 +65,11 @@ curl localhost:4173/sw.js                 # ✓ HTTP 200
 
 ### PHASE 3: Fix 401 on Static Assets
 **Goal**: Ensure manifest/SW/assets are publicly accessible
-**Action**: Update `vercel.json` to exclude static paths from catch-all rewrite
+**Action**: Update `vercel.json` with explicit headers for static assets
+**Note**: If 401 persists, check Vercel project settings for:
+  - Password protection on deployment
+  - Edge config or middleware in Vercel dashboard
+  - Authentication/access control settings
 
 ### PHASE 4: CSP Cleanup (Optional)
 **Goal**: Stop console spam from Vercel tooling
