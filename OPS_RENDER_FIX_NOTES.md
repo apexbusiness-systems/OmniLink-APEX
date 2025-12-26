@@ -76,7 +76,67 @@ curl localhost:4173/sw.js                 # ✓ HTTP 200
 **Action**: Add `https://vercel.live` to CSP if desired
 
 ## Validation Gates
-- [ ] `npm run build` passes
-- [ ] `npm run preview` renders UI with no console errors
-- [ ] `/manifest.webmanifest` returns 200 in Vercel preview
-- [ ] Hard refresh works (SW doesn't break navigation)
+
+### Local Validation (Completed ✅)
+- [x] `npm run build` passes (13.61s, no errors)
+- [x] `npm run preview` renders UI successfully
+- [x] `/manifest.webmanifest` returns 200 locally
+- [x] `/sw.js` returns 200 locally
+- [x] All static assets copied to dist/ correctly
+
+### Production Validation (To Verify in Vercel)
+- [ ] Page renders (no white screen/blank page)
+- [ ] No "createContext undefined" error in console
+- [ ] `/manifest.webmanifest` returns 200 (not 401)
+- [ ] Service worker clears old caches on first load
+- [ ] Hard refresh works after cache clear
+- [ ] No CSP violations for Vercel tooling
+
+## Summary of Changes
+
+**4 commits on branch `claude/fix-vercel-blank-page-wj9R1`:**
+
+1. **hotfix: self-destroying service worker to clear stale caches**
+   - Modified `public/sw.js` to clear all caches and unregister
+   - Temporary recovery measure to unbrick users with stale chunks
+   - TODO: Revert to normal PWA mode after one stable deployment
+
+2. **fix: dedupe react/react-dom to prevent runtime createContext crash**
+   - Added `dedupe: ['react', 'react-dom']` to `vite.config.ts`
+   - Ensures only one React instance in production bundle
+   - Prevents "Cannot read properties of undefined (reading 'createContext')"
+
+3. **fix: add explicit headers for static assets in vercel.json**
+   - Added Content-Type and Cache-Control headers for manifest/SW
+   - Ensures Vercel serves static files with correct MIME types
+   - Note: If 401 persists, check Vercel project password protection
+
+4. **chore: adjust CSP to allow Vercel preview tooling**
+   - Added `https://vercel.live` to CSP script-src/connect-src/frame-src
+   - Prevents CSP violations in Vercel preview deployments
+   - Maintains security while allowing preview toolbar
+
+## Rollback Plan
+
+If issues occur after deployment:
+
+1. **If SW causes navigation issues**: Comment out SW registration in `index.html:49-57`
+2. **If React errors persist**: Check browser console for specific module errors
+3. **If build fails**: Revert `vite.config.ts` dedupe config
+4. **Emergency rollback**: `git revert HEAD~4..HEAD` and redeploy
+
+## Future Work (After Stable Deployment)
+
+1. **Restore normal PWA mode**:
+   - Revert `public/sw.js` to normal caching strategy (not self-destroying)
+   - Test offline functionality
+   - Ensure cache versioning prevents future stale chunk issues
+
+2. **Monitor production**:
+   - Check for createContext errors in error tracking
+   - Verify Service Worker registration rates
+   - Monitor 401 errors on static assets
+
+3. **Optimize CSP**:
+   - Consider environment-specific CSP (only allow vercel.live in preview)
+   - Review and tighten 'unsafe-inline' and 'unsafe-eval' permissions
