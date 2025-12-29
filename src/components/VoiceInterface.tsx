@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
@@ -229,7 +229,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onTranscript, onSpeakin
     }
   };
 
-  const endConversation = () => {
+  const endConversation = useCallback(() => {
     userEndedRef.current = true;
     cleanupTimers();
     cleanupTransport();
@@ -241,7 +241,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onTranscript, onSpeakin
     setIsConnected(false);
     setIsConnecting(false);
     onSpeakingChange?.(false);
-  };
+  }, [onSpeakingChange]);
 
   useEffect(() => {
     return () => {
@@ -249,7 +249,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onTranscript, onSpeakin
       cleanupTimers();
       endConversation();
     };
-  }, []);
+  }, [endConversation]);
 
   return (
     <div className="flex flex-col gap-3">

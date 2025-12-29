@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { PropsWithChildren, useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 type Props = PropsWithChildren<{
@@ -23,7 +23,7 @@ export default function SecretLogin({
   const timer = useRef<number | null>(null);
   const clickTimes = useRef<number[]>([]);
 
-  const go = () => nav(to);
+  const go = useCallback(() => nav(to), [nav, to]);
 
   const onClick = (e: React.MouseEvent) => {
     if (e.altKey) return go();

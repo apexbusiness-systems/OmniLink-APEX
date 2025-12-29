@@ -7,35 +7,30 @@ export class AudioRecorder {
   constructor(private onAudioData: (audioData: Float32Array) => void) {}
 
   async start() {
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 24000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      
-      this.audioContext = new AudioContext({
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
         sampleRate: 24000,
-      });
-      
-      this.source = this.audioContext.createMediaStreamSource(this.stream);
-      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-      
-      this.processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        this.onAudioData(new Float32Array(inputData));
-      };
-      
-      this.source.connect(this.processor);
-      this.processor.connect(this.audioContext.destination);
-    } catch (error) {
-      // Error will be handled by caller
-      throw error;
-    }
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
+    
+    this.audioContext = new AudioContext({
+      sampleRate: 24000,
+    });
+    
+    this.source = this.audioContext.createMediaStreamSource(this.stream);
+    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+    
+    this.processor.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0);
+      this.onAudioData(new Float32Array(inputData));
+    };
+    
+    this.source.connect(this.processor);
+    this.processor.connect(this.audioContext.destination);
   }
 
   stop() {

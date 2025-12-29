@@ -23,7 +23,7 @@ export function useOfflineSupport() {
       description: 'You are back online. Syncing data...',
     });
     processQueuedRequests();
-  }, []);
+  }, [log]);
 
   const handleOffline = useCallback(() => {
     // #region agent log
@@ -35,7 +35,7 @@ export function useOfflineSupport() {
       description: 'You are offline. Changes will be saved locally.',
       variant: 'destructive',
     });
-  }, []);
+  }, [log]);
 
   useEffect(() => {
     // #region agent log
@@ -44,7 +44,7 @@ export function useOfflineSupport() {
     
     const cleanup = setupOfflineListeners(handleOnline, handleOffline);
     return cleanup;
-  }, [handleOnline, handleOffline]);
+  }, [log, handleOnline, handleOffline]);
 
   return { isOnline };
 }

@@ -6,7 +6,7 @@
 const DB_NAME = 'omnilink-cache';
 const STORE_NAME = 'kv';
 
-let inMemoryStore = new Map<string, unknown>();
+const inMemoryStore = new Map<string, unknown>();
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 function hasIndexedDB(): boolean {

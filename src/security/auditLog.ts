@@ -31,7 +31,7 @@ const MAX_DELAY_MS = Number(import.meta.env.VITE_AUDIT_RETRY_MAX_MS ?? 10_000);
 const JITTER_MS = Number(import.meta.env.VITE_AUDIT_RETRY_JITTER_MS ?? 250);
 const DEGRADE_THRESHOLD = Number(import.meta.env.VITE_AUDIT_DEGRADE_THRESHOLD ?? 3);
 
-let recentEvents: AuditEventPayload[] = [];
+const recentEvents: AuditEventPayload[] = [];
 let queue: QueuedAuditEvent[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let flushInFlight = false;
