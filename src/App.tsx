@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { Web3Provider } from "./providers/Web3Provider";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { ConsentBanner } from "./components/ConsentBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -162,6 +163,7 @@ const App = () => (
         <BrowserRouter>
           <ConsentBanner />
           <AuthProvider>
+            <Web3Provider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -197,6 +199,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </Web3Provider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

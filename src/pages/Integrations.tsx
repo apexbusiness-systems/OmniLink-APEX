@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { WalletConnect } from '@/components/WalletConnect';
+import { Separator } from '@/components/ui/separator';
 
 interface Integration {
   id: string;
@@ -172,6 +174,23 @@ const Integrations = () => {
       <div>
         <h1 className="text-3xl font-bold">Integrations</h1>
         <p className="text-muted-foreground">Connect external services and APIs to enhance your workflow</p>
+      </div>
+
+      {/* Web3 Wallet Integration */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Web3 Wallet</h2>
+          <p className="text-sm text-muted-foreground">Connect your crypto wallet for NFT-gated features and blockchain verification</p>
+        </div>
+        <div className="flex justify-center md:justify-start">
+          <WalletConnect />
+        </div>
+      </div>
+
+      <Separator className="my-8" />
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4">External Services</h2>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
