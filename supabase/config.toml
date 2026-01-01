@@ -1,5 +1,17 @@
 project_id = "wwajmaohwcbooljdureo"
 
+# Auth configuration
+[auth]
+enable_signup = true
+
+# Enable Web3 authentication providers
+[auth.external.ethereum]
+enabled = true
+
+[auth.external.solana]
+enabled = false  # Enable when Solana support is needed
+
+# Edge Functions Configuration
 [functions.storage-upload-url]
 verify_jwt = true
 
@@ -26,3 +38,29 @@ verify_jwt = false
 
 [functions.lovable-healthcheck]
 verify_jwt = false
+
+# Web3 Authentication Functions
+[functions.web3-nonce]
+verify_jwt = false  # Public endpoint to generate nonce for wallet signature
+
+[functions.web3-verify]
+verify_jwt = false  # Public endpoint to verify wallet signature and create session
+
+[functions.verify-nft]
+verify_jwt = true  # Requires authenticated user to check NFT ownership
+
+[functions.alchemy-webhook]
+verify_jwt = false  # Webhook endpoint from Alchemy (uses signature verification)
+
+# Environment Variables for Edge Functions
+# These blockchain-related secrets must be set in production environment:
+# - WEB3_PRIVATE_KEY: OmniLink EVM private key for transaction signing
+# - ALCHEMY_API_KEY_ETH: Alchemy API key for Ethereum RPC access
+# - ALCHEMY_API_KEY_POLYGON: Alchemy API key for Polygon RPC access
+# - MEMBERSHIP_NFT_ADDRESS: Deployed APEXMembershipNFT contract address
+# - ALCHEMY_WEBHOOK_SIGNING_KEY: Secret for verifying Alchemy webhook signatures
+
+[functions]
+# Allow these environment variables to be accessed by edge functions
+# DO NOT hardcode these values - they must be loaded from environment
+import_map = "import_map.json"
