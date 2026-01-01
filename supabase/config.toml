@@ -59,8 +59,6 @@ verify_jwt = false  # Webhook endpoint from Alchemy (uses signature verification
 # - ALCHEMY_API_KEY_POLYGON: Alchemy API key for Polygon RPC access
 # - MEMBERSHIP_NFT_ADDRESS: Deployed APEXMembershipNFT contract address
 # - ALCHEMY_WEBHOOK_SIGNING_KEY: Secret for verifying Alchemy webhook signatures
-
-[functions]
-# Allow these environment variables to be accessed by edge functions
-# DO NOT hardcode these values - they must be loaded from environment
-import_map = "import_map.json"
+#
+# Set these in Supabase Dashboard → Project Settings → Edge Functions → Environment Variables
+# DO NOT hardcode these values in code - they must be loaded from environment
