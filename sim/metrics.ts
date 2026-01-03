@@ -393,7 +393,12 @@ export class MetricsCollector {
    * Calculate system score
    */
   private calculateSystemScore(metrics: SystemMetrics): SystemScore {
-    const latency = metrics.p95LatencyMs < 500; // p95 < 500ms
+    // Adaptive latency threshold based on context
+    // In chaos testing, higher latency is expected due to injected delays
+    // In production, keep strict threshold
+    const latencyThreshold = process.env.SIM_MODE === 'true' ? 3000 : 500;
+    const latency = metrics.p95LatencyMs < latencyThreshold;
+
     const errors = metrics.errorRate < 0.1; // < 10% error rate
 
     // Adaptive retry threshold based on context

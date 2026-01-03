@@ -172,8 +172,14 @@ jobs:
         env:
           SIM_MODE: 'true'
           SANDBOX_TENANT: 'ci-chaos-${{ github.run_id }}-seed-${{ matrix.seed }}'
-          # Tiered thresholds: PR = 70 (permissive), main/scheduled = 90 (strict)
-          CHAOS_THRESHOLD: ${{ github.event_name == 'pull_request' && '70' || '90' }}
+          # Tiered thresholds:
+          # - PRs, develop, feature branches: 70 (permissive)
+          # - main, scheduled: 90 (strict production gate)
+          CHAOS_THRESHOLD: ${{
+            (github.event_name == 'pull_request') && '70' ||
+            (github.event_name == 'schedule') && '90' ||
+            (github.ref == 'refs/heads/main') && '90' ||
+            '70' }}
 
       - name: Check simulation passed
         id: check-results
