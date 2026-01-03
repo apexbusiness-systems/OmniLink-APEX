@@ -37,6 +37,14 @@ env:
   SIM_MODE: 'true'
   SANDBOX_TENANT: 'ci-test'
 
+# Explicit least-privilege permissions for workflow
+# Prevents 403 errors when commenting on PRs
+permissions:
+  contents: read          # Required: Clone repository
+  pull-requests: write    # Required: Comment on PRs
+  issues: write           # Required: Comment on PRs (via issues API)
+  # All other permissions: none (implicit)
+
 jobs:
   unit-tests:
     name: Unit Tests
@@ -188,34 +196,72 @@ jobs:
           path: evidence/latest/
           retention-days: 14
 
+      - name: Publish results to job summary
+        if: always()
+        run: |
+          echo "## 🌀 Chaos Simulation Results (Seed ${{ matrix.seed }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          SCORE="${{ steps.check-results.outputs.score }}"
+          PASSED="${{ steps.check-results.outputs.passed }}"
+
+          if [ "$PASSED" = "true" ]; then
+            echo "### ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Score:** $SCORE/100" >> $GITHUB_STEP_SUMMARY
+          echo "**Seed:** ${{ matrix.seed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[📊 View detailed evidence](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Evidence artifact:** \`chaos-simulation-evidence-seed-${{ matrix.seed }}\`" >> $GITHUB_STEP_SUMMARY
+
       - name: Comment PR with results
-        if: github.event_name == 'pull_request' && always()
+        if: |
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.fork == false &&
+          github.actor != 'dependabot[bot]' &&
+          always()
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
-            const score = '${{ steps.check-results.outputs.score }}';
-            const passed = '${{ steps.check-results.outputs.passed }}';
-            const seed = '${{ matrix.seed }}';
+            try {
+              const score = '${{ steps.check-results.outputs.score }}';
+              const passed = '${{ steps.check-results.outputs.passed }}';
+              const seed = '${{ matrix.seed }}';
 
-            const emoji = passed === 'true' ? '✅' : '❌';
-            const status = passed === 'true' ? 'PASSED' : 'FAILED';
+              const emoji = passed === 'true' ? '✅' : '❌';
+              const status = passed === 'true' ? 'PASSED' : 'FAILED';
 
-            const comment = `## ${emoji} Chaos Simulation Results (Seed ${seed})
+              const comment = `## ${emoji} Chaos Simulation Results (Seed ${seed})
 
-            - **Score:** ${score}/100
-            - **Status:** ${status}
-            - **Seed:** ${seed}
-            - **Run ID:** ${{ github.run_id }}
+              - **Score:** ${score}/100
+              - **Status:** ${status}
+              - **Seed:** ${seed}
+              - **Run ID:** ${{ github.run_id }}
 
-            [View full evidence](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            `;
+              [View full evidence](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `;
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+
+              console.log('✅ PR comment posted successfully');
+            } catch (error) {
+              // Expected for forks, Dependabot, or restrictive permissions
+              console.warn('⚠️  Could not post PR comment:', error.message);
+              console.log('ℹ️  This is expected for forks and Dependabot PRs');
+              console.log('📊 Results are available in job summary and artifacts');
+            }
 
   burst-load-test:
     name: Burst Load Test (1000 events)
