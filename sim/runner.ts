@@ -230,73 +230,100 @@ export class SimulationRunner {
     let retries = 0;
     let wasCached = false;
     let lastError: string | undefined;
+    const maxRetries = this.config.chaos.maxRetries || 2;
 
-    try {
-      // Create event
-      const event = createEvent(this.config.tenantId, beat.eventType)
-        .correlationId(this.config.runId!)
-        .idempotencyKey(`${this.config.tenantId}-${beat.eventType}-${Date.now()}-${beat.number}`)
-        .source(beat.app)
-        .target(beat.target || 'omnihub')
-        .payload(beat.payload)
-        .build();
+    // Create event ONCE (outside retry loop)
+    const event = createEvent(this.config.tenantId, beat.eventType)
+      .correlationId(this.config.runId!)
+      .idempotencyKey(`${this.config.tenantId}-${beat.eventType}-${Date.now()}-${beat.number}`)
+      .source(beat.app)
+      .target(beat.target || 'omnihub')
+      .payload(beat.payload)
+      .build();
 
-      // Make chaos decision
-      const chaosDecision = this.chaos.decide(event, beat.number);
+    // Make chaos decision ONCE (outside retry loop)
+    // Retries should NOT get new chaos injections
+    const chaosDecision = this.chaos.decide(event, beat.number);
 
-      // Execute with idempotency
-      const { wasCached: cached, attemptCount } = await executeEventIdempotently(
-        event,
-        async (evt) => {
-          return await this.executeEvent(evt, beat, chaosDecision);
+    // Retry loop
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+
+        // Execute with idempotency
+        // Only apply chaos on first attempt - retries should be clean
+        const { wasCached: cached, attemptCount } = await executeEventIdempotently(
+          event,
+          async (evt) => {
+            return await this.executeEvent(evt, beat, chaosDecision, attempt);
+          }
+        );
+
+        wasCached = cached;
+        retries = attempt;
+
+        const latencyMs = Date.now() - startTime;
+
+        // Record metrics
+        this.metrics.recordLatency(
+          `${beat.app}:${beat.eventType}`,
+          latencyMs,
+          true,
+          retries
+        );
+
+        this.metrics.recordAppEvent(beat.app, true, retries > 0, wasCached);
+
+        return {
+          beat,
+          success: true,
+          latencyMs,
+          retries,
+          wasCached,
+        };
+
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Unknown error';
+        retries = attempt;
+
+        // If this is the last attempt, fail
+        if (attempt >= maxRetries) {
+          const latencyMs = Date.now() - startTime;
+
+          this.metrics.recordLatency(
+            `${beat.app}:${beat.eventType}`,
+            latencyMs,
+            false,
+            retries
+          );
+
+          this.metrics.recordAppEvent(beat.app, false, retries > 0, false);
+
+          return {
+            beat,
+            success: false,
+            latencyMs,
+            retries,
+            wasCached,
+            error: lastError,
+          };
         }
-      );
 
-      wasCached = cached;
-      retries = attemptCount - 1;
-
-      const latencyMs = Date.now() - startTime;
-
-      // Record metrics
-      this.metrics.recordLatency(
-        `${beat.app}:${beat.eventType}`,
-        latencyMs,
-        true,
-        retries
-      );
-
-      this.metrics.recordAppEvent(beat.app, true, retries > 0, wasCached);
-
-      return {
-        beat,
-        success: true,
-        latencyMs,
-        retries,
-        wasCached,
-      };
-
-    } catch (error) {
-      const latencyMs = Date.now() - startTime;
-      lastError = error instanceof Error ? error.message : 'Unknown error';
-
-      this.metrics.recordLatency(
-        `${beat.app}:${beat.eventType}`,
-        latencyMs,
-        false,
-        retries
-      );
-
-      this.metrics.recordAppEvent(beat.app, false, retries > 0, false);
-
-      return {
-        beat,
-        success: false,
-        latencyMs,
-        retries,
-        wasCached,
-        error: lastError,
-      };
+        // Exponential backoff before retry
+        const backoffMs = this.chaos.calculateBackoff(attempt);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
     }
+
+    // Should never reach here, but TypeScript needs this
+    const latencyMs = Date.now() - startTime;
+    return {
+      beat,
+      success: false,
+      latencyMs,
+      retries,
+      wasCached,
+      error: lastError || 'Max retries exceeded',
+    };
   }
 
   /**
@@ -305,7 +332,8 @@ export class SimulationRunner {
   private async executeEvent(
     event: EventEnvelope,
     beat: Beat,
-    chaosDecision: any
+    chaosDecision: any,
+    attempt: number = 0
   ): Promise<any> {
     // Get circuit breaker for target app
     const targetApp = Array.isArray(beat.target) ? beat.target[0] : (beat.target || 'omnihub');
@@ -314,21 +342,24 @@ export class SimulationRunner {
 
     // Execute through circuit breaker
     return await circuit.execute(async () => {
-      // Simulate delay if chaos says so
-      if (chaosDecision.shouldDelay && chaosDecision.delayMs > 0) {
+      // Only apply chaos on first attempt (retries should be clean)
+      const shouldApplyChaos = attempt === 0;
+
+      // Simulate delay if chaos says so (only on first attempt)
+      if (shouldApplyChaos && chaosDecision.shouldDelay && chaosDecision.delayMs > 0) {
         await new Promise(resolve => setTimeout(resolve, chaosDecision.delayMs));
       }
 
-      // Simulate failures
-      if (chaosDecision.shouldTimeout) {
+      // Simulate failures (only on first attempt)
+      if (shouldApplyChaos && chaosDecision.shouldTimeout) {
         throw new Error('Simulated timeout');
       }
 
-      if (chaosDecision.shouldFailNetwork) {
+      if (shouldApplyChaos && chaosDecision.shouldFailNetwork) {
         throw new Error('Simulated network failure');
       }
 
-      if (chaosDecision.shouldFailServer) {
+      if (shouldApplyChaos && chaosDecision.shouldFailServer) {
         throw new Error('Simulated server error (500)');
       }
 

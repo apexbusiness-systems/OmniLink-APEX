@@ -272,6 +272,20 @@ export class ChaosEngine {
   }
 
   /**
+   * Calculate exponential backoff delay for retry attempt
+   */
+  calculateBackoff(attempt: number): number {
+    const baseDelay = 100; // 100ms base delay
+    const maxDelay = 5000; // 5s max delay
+    const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+
+    // Add jitter (±25%)
+    const jitter = delay * 0.25 * (this.rng.next() * 2 - 1);
+
+    return Math.round(delay + jitter);
+  }
+
+  /**
    * Reset engine (for new run)
    */
   reset(newSeed?: number): void {

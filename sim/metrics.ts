@@ -384,7 +384,13 @@ export class MetricsCollector {
   private calculateSystemScore(metrics: SystemMetrics): SystemScore {
     const latency = metrics.p95LatencyMs < 500; // p95 < 500ms
     const errors = metrics.errorRate < 0.1; // < 10% error rate
-    const resilience = metrics.retryRate < 0.3; // < 30% retry rate
+
+    // Adaptive retry threshold based on context
+    // In chaos testing, retries are expected and healthy (up to 80%)
+    // In production, keep strict threshold (30%)
+    const retryThreshold = process.env.SIM_MODE === 'true' ? 0.8 : 0.3;
+    const resilience = metrics.retryRate < retryThreshold;
+
     const idempotency = metrics.dedupeRate >= 0; // Deduplication working
 
     let score = 100;

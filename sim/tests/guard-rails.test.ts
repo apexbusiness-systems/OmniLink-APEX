@@ -121,7 +121,7 @@ describe('Guard Rails', () => {
       const config2 = generateSandboxConfig();
 
       expect(config1.SANDBOX_TENANT).not.toBe(config2.SANDBOX_TENANT);
-      expect(config1.SANDBOX_TENANT).toMatch(/^sandbox-\d+$/);
+      expect(config1.SANDBOX_TENANT).toMatch(/^sandbox-\d+-\d+$/);
     });
   });
 });

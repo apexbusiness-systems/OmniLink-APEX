@@ -238,11 +238,14 @@ export function assertGuardRails(config?: GuardRailConfig): void {
 // HELPER: GENERATE SAFE SANDBOX CONFIG
 // ============================================================================
 
+// Counter for unique tenant generation
+let tenantCounter = 0;
+
 /**
  * Generate a safe sandbox configuration for testing
  */
 export function generateSandboxConfig(tenantId?: string): Record<string, string> {
-  const tenant = tenantId || `sandbox-${Date.now()}`;
+  const tenant = tenantId || `sandbox-${Date.now()}-${tenantCounter++}`;
 
   return {
     SIM_MODE: 'true',
