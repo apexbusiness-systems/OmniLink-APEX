@@ -24,7 +24,16 @@
     "dr:test": "tsx scripts/dr/run-dr-test.ts --dry-run",
     "prompt-defense:analyze": "tsx scripts/prompt-defense/analyze_flags.ts",
     "secret:scan": "node scripts/secret-scan.mjs",
-    "security:audit": "node -e \"const fs=require('fs');const dir='security';if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});\" && npm audit --json > security/npm-audit-latest.json || true"
+    "security:audit": "node -e \"const fs=require('fs');const dir='security';if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});\" && npm audit --json > security/npm-audit-latest.json || true",
+    "sim:chaos": "tsx sim/cli.ts --mode chaos",
+    "sim:dry": "tsx sim/cli.ts --mode dry",
+    "sim:quick": "tsx sim/cli.ts --mode quick",
+    "sim:burst": "tsx sim/cli.ts --mode burst",
+    "sim:custom": "tsx sim/cli.ts --mode custom",
+    "sim:validate": "tsx sim/cli.ts --validate",
+    "sim:report": "tsx sim/evidence.ts --report",
+    "sim:clean": "rm -rf evidence/*",
+    "test:sim": "vitest run sim/tests"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
