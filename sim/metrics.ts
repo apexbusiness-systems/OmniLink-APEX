@@ -52,7 +52,7 @@ export interface SystemMetrics {
   p99LatencyMs: number;
   errorRate: number;
   retryRate: number;
-  dedupe Rate: number;
+  dedupeRate: number;
   queueDepth: number;
   circuitBreakers: Record<string, string>; // name -> state
 }

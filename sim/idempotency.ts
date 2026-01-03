@@ -402,26 +402,171 @@ export function stopAutoCleanup(): void {
 }
 
 // ============================================================================
-// PERSISTENCE (Stub for future Supabase integration)
+// PERSISTENCE (Supabase integration)
 // ============================================================================
 
 /**
- * Persist receipts to database (NOT IMPLEMENTED - stub for future)
+ * Persist receipts to database
+ * Upserts current in-memory receipts to Supabase for durability
  */
-export async function persistToDatabase(): Promise<void> {
-  // TODO: Implement Supabase persistence
-  // INSERT INTO idempotency_receipts (...)
-  // ON CONFLICT (idempotency_key) DO UPDATE ...
-  console.warn('[Idempotency] Database persistence not implemented - using in-memory only');
+export async function persistToDatabase(): Promise<number> {
+  // Skip in simulation mode (use in-memory only for testing)
+  if (process.env.SIM_MODE === 'true') {
+    return 0;
+  }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('[Idempotency] Supabase credentials not found - skipping persistence');
+      return 0;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Convert in-memory receipts to database format
+    const receipts = Array.from(receiptStore.receipts.entries()).map(([key, receipt]) => ({
+      idempotency_key: key,
+      correlation_id: receipt.correlationId,
+      event_type: receipt.eventType,
+      request_payload: receipt.request,
+      response_payload: receipt.response,
+      attempt_count: receipt.attemptCount,
+      created_at: receipt.createdAt.toISOString(),
+      expires_at: new Date(receipt.expiresAt).toISOString(),
+      tenant_id: process.env.SANDBOX_TENANT || 'default'
+    }));
+
+    if (receipts.length === 0) {
+      return 0;
+    }
+
+    // Batch upsert to database
+    const { error } = await supabase
+      .from('idempotency_receipts')
+      .upsert(receipts, {
+        onConflict: 'idempotency_key',
+        ignoreDuplicates: false
+      });
+
+    if (error) {
+      console.error('[Idempotency] Database persist error:', error.message);
+      return 0;
+    }
+
+    return receipts.length;
+  } catch (error) {
+    console.error('[Idempotency] Persist to database failed:', error instanceof Error ? error.message : error);
+    return 0;
+  }
 }
 
 /**
- * Load receipts from database (NOT IMPLEMENTED - stub for future)
+ * Load receipts from database
+ * Restores idempotency receipts from Supabase into in-memory store
  */
-export async function loadFromDatabase(): Promise<void> {
-  // TODO: Implement Supabase loading
-  // SELECT * FROM idempotency_receipts WHERE expires_at > NOW()
-  console.warn('[Idempotency] Database loading not implemented - using in-memory only');
+export async function loadFromDatabase(tenantId?: string): Promise<number> {
+  // Skip in simulation mode (use in-memory only for testing)
+  if (process.env.SIM_MODE === 'true') {
+    return 0;
+  }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('[Idempotency] Supabase credentials not found - skipping load');
+      return 0;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const tenant = tenantId || process.env.SANDBOX_TENANT || 'default';
+
+    // Load active receipts from database
+    const { data, error } = await supabase
+      .from('idempotency_receipts')
+      .select('*')
+      .eq('tenant_id', tenant)
+      .gt('expires_at', new Date().toISOString());
+
+    if (error) {
+      console.error('[Idempotency] Database load error:', error.message);
+      return 0;
+    }
+
+    if (!data || data.length === 0) {
+      return 0;
+    }
+
+    // Load into in-memory store
+    let loaded = 0;
+    for (const row of data) {
+      const ttl = new Date(row.expires_at).getTime() - Date.now();
+      if (ttl > 0) {
+        storeReceipt(
+          row.idempotency_key,
+          row.correlation_id,
+          row.event_type,
+          row.request_payload,
+          row.response_payload,
+          ttl
+        );
+        // Update attempt count
+        const receipt = receiptStore.receipts.get(row.idempotency_key);
+        if (receipt) {
+          receipt.attemptCount = row.attempt_count;
+        }
+        loaded++;
+      }
+    }
+
+    return loaded;
+  } catch (error) {
+    console.error('[Idempotency] Load from database failed:', error instanceof Error ? error.message : error);
+    return 0;
+  }
+}
+
+/**
+ * Clean up expired receipts from database
+ */
+export async function cleanupDatabaseExpired(): Promise<number> {
+  // Skip in simulation mode
+  if (process.env.SIM_MODE === 'true') {
+    return 0;
+  }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return 0;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { error, count } = await supabase
+      .from('idempotency_receipts')
+      .delete({ count: 'exact' })
+      .lt('expires_at', new Date().toISOString());
+
+    if (error) {
+      console.error('[Idempotency] Database cleanup error:', error.message);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('[Idempotency] Database cleanup failed:', error instanceof Error ? error.message : error);
+    return 0;
+  }
 }
 
 // ============================================================================
@@ -442,4 +587,7 @@ export default {
   markEventProcessed,
   startAutoCleanup,
   stopAutoCleanup,
+  persistToDatabase,
+  loadFromDatabase,
+  cleanupDatabaseExpired,
 };
