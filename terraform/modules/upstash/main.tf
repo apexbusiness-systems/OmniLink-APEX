@@ -15,7 +15,7 @@ resource "upstash_redis_database" "main" {
   region        = var.region
   tls           = true
   eviction      = var.eviction_policy
-  
+
   # Multi-zone replication for production
   multi_zone = var.multi_zone
 }
@@ -23,7 +23,7 @@ resource "upstash_redis_database" "main" {
 # Optional: QStash for message queue
 resource "upstash_qstash_endpoint" "webhook" {
   count = var.enable_qstash ? 1 : 0
-  
+
   name = "${var.database_name}-webhook"
   url  = var.webhook_url
 }

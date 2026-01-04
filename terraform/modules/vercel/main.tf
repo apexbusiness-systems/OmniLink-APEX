@@ -13,7 +13,7 @@ terraform {
 resource "vercel_project" "main" {
   name      = var.project_name
   framework = "vite"
-  
+
   git_repository {
     type = "github"
     repo = var.github_repo
@@ -46,7 +46,7 @@ resource "vercel_project_domain" "main" {
 # Deployment protection (production only)
 resource "vercel_project_deployment_retention" "main" {
   project_id = vercel_project.main.id
-  
+
   # Keep last 30 deployments
   expiration = 2592000 # 30 days in seconds
 }
