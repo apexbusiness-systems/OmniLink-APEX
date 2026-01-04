@@ -81,7 +81,8 @@ export function getStorage(): IStorage {
   const apiKey =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.VITE_SUPABASE_ANON_KEY
-  const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+  // SECURITY: Never use serviceRoleKey in client code - it bypasses RLS!
+  // Only use anon/publishable keys in browser. Service role is for Edge Functions only.
   const debug = import.meta.env.DEV
 
   if (!url || !apiKey) {
@@ -94,7 +95,7 @@ export function getStorage(): IStorage {
     provider,
     url,
     apiKey,
-    serviceRoleKey,
+    // serviceRoleKey omitted - client code uses anon key with RLS protection
     debug,
   })
 

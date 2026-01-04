@@ -1,0 +1,71 @@
+name: Deploy Web3 Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-functions:
+    name: Deploy Supabase Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions
+        run: |
+          # Link to Supabase project
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+
+          # Deploy all functions
+          supabase functions deploy omnilink-agent --no-verify-jwt
+          supabase functions deploy blockchain-verify --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Deployment Status
+        if: always()
+        run: |
+          echo "## 🚀 Edge Functions Deployment" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **Status:** All functions deployed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Deployed Functions:**" >> $GITHUB_STEP_SUMMARY
+            echo "- omnilink-agent" >> $GITHUB_STEP_SUMMARY
+            echo "- blockchain-verify" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Deployment failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Required Secrets:**" >> $GITHUB_STEP_SUMMARY
+            echo "- SUPABASE_ACCESS_TOKEN" >> $GITHUB_STEP_SUMMARY
+            echo "- SUPABASE_DB_PASSWORD" >> $GITHUB_STEP_SUMMARY
+            echo "- SUPABASE_PROJECT_REF" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test Function Health
+        if: success()
+        run: |
+          # Smoke test the deployed functions
+          echo "Testing omnilink-agent endpoint..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/omnilink-agent" \
+            -d '{"test": true}')
+
+          if [ $response -eq 200 ] || [ $response -eq 400 ]; then
+            echo "✅ omnilink-agent is healthy (HTTP $response)"
+          else
+            echo "⚠️ omnilink-agent returned HTTP $response"
+            exit 1
+          fi
