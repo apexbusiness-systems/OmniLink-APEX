@@ -3,7 +3,7 @@
 
 terraform {
   required_version = ">= 1.6.0"
-  
+
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -46,10 +46,10 @@ provider "vercel" {
 module "cloudflare" {
   source = "../../modules/cloudflare"
 
-  zone_id               = var.cloudflare_zone_id
-  domain                = "staging.omnihub.dev"
-  rate_limit_threshold  = 200 # Higher limit for staging
-  security_level        = "low" # Less strict for testing
+  zone_id              = var.cloudflare_zone_id
+  domain               = "staging.omnihub.dev"
+  rate_limit_threshold = 200  # Higher limit for staging
+  security_level       = "low" # Less strict for testing
 }
 
 # Upstash Redis
@@ -66,11 +66,11 @@ module "redis" {
 module "vercel" {
   source = "../../modules/vercel"
 
-  project_name   = "omnihub-staging"
-  github_repo    = var.github_repo
-  environment    = "preview"
-  custom_domain  = "staging.omnihub.dev"
-  
+  project_name  = "omnihub-staging"
+  github_repo   = var.github_repo
+  environment   = "preview"
+  custom_domain = "staging.omnihub.dev"
+
   env_vars = {
     VITE_SUPABASE_URL                = var.vite_supabase_url
     VITE_SUPABASE_PUBLISHABLE_KEY    = var.vite_supabase_publishable_key
