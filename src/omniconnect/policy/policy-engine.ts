@@ -14,6 +14,7 @@ import { SchemaValidator } from './schema-validator';
 export class PolicyEngine {
   private readonly profiles = new Map<string, AppFilterProfile>();
   private readonly schemaValidator = new SchemaValidator();
+  private readonly categoryRegexCache = new Map<string, { allow: RegExp | null; deny: RegExp | null }>();
 
   async filter(
     events: CanonicalEvent[],
@@ -43,8 +44,21 @@ export class PolicyEngine {
     return this.profiles.get(appId) || null;
   }
 
+  private compileCategoryRegexes(profile: AppFilterProfile): { allow: RegExp | null; deny: RegExp | null } {
+    const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return {
+      allow: profile.contentCategories.allow.length > 0
+        ? new RegExp(profile.contentCategories.allow.map(escapeRegExp).join('|'), 'i')
+        : null,
+      deny: profile.contentCategories.deny.length > 0
+        ? new RegExp(profile.contentCategories.deny.map(escapeRegExp).join('|'), 'i')
+        : null
+    };
+  }
+
   async setProfile(profile: AppFilterProfile): Promise<void> {
     this.profiles.set(profile.appId, profile);
+    this.categoryRegexCache.set(profile.appId, this.compileCategoryRegexes(profile));
   }
 
   async validateEvent(event: CanonicalEvent, appId: string): Promise<ValidationResult> {
@@ -103,16 +117,22 @@ export class PolicyEngine {
   private shouldInclude(event: CanonicalEvent, profile: AppFilterProfile): boolean {
     if (!profile.allowedEventTypes.includes(event.eventType)) return false;
 
-    const { allow, deny } = profile.contentCategories;
-    const body = JSON.stringify({ p: event.payload, m: event.metadata }).toLowerCase();
-    const hasMatch = (list: string[]) => list.some(c => body.includes(c.toLowerCase()));
+    const body = JSON.stringify({ p: event.payload, m: event.metadata });
 
-    if (deny.length > 0 && hasMatch(deny)) return false;
+    let regexes = this.categoryRegexCache.get(profile.appId);
+    if (!regexes) {
+      // Fallback to runtime compilation if not pre-cached (e.g. tests that bypass setProfile)
+      regexes = this.compileCategoryRegexes(profile);
+      this.categoryRegexCache.set(profile.appId, regexes);
+    }
+
+    // ⚡ Bolt: Replaced O(N*M) array.some(includes) with O(M) single RegExp evaluation
+    if (regexes.deny && regexes.deny.test(body)) return false;
     
     // Fail closed: if allow list is empty, we do not allow any payload that hasn't been explicitly allowed
-    if (allow.length === 0) return false;
+    if (!regexes.allow) return false;
     
-    return hasMatch(allow);
+    return regexes.allow.test(body);
   }
 
   // ⚡ Bolt: Define regex outside function scope so we only compile once
